@@ -158,6 +158,44 @@ for i in range(len(lines)):
     if "; CP TOOLCHANGE START" in line and RAMMING_TEMP > 0:
         new_lines.append(";MMUPP: RAMMING TEMP ADDED")
         new_lines.append("M109 R" + str(RAMMING_TEMP))
+        
+    if "; CP TOOLCHANGE LOAD" in line:
+        
+        print(i)
+        i_1 = (i + 1)
+        print(i_1)
+        i_2 = (i_1 + 1)
+        print(i_2)
+        
+        if 'G1' not in lines[i_1]:
+            print (lines[i_1])
+            i_1 = (i_1 + 1)
+            i_2 = (i_1 + 1)
+            
+        while 'G1' not in lines[i_2]:
+            print (lines[i_2])
+            i_2 = i_2 + 1
+        
+        cmd1_extrude_amount = re.findall('E\d*\.?\d+', lines[i_1])[0]
+        cmd2_extrude_amount = re.findall('E\d*\.?\d+', lines[i_2])[0]
+        
+        print (cmd1_extrude_amount)
+        print (cmd2_extrude_amount)
+        
+        total_extrude = float(cmd1_extrude_amount[1:]) + float(cmd2_extrude_amount[1:])
+        
+        print (total_extrude)
+        
+        REAMAINDER = 5.0
+        
+        cmd1_new_extrude_amount = str(total_extrude - REAMAINDER)
+        
+        lines[i_1] = lines[i_1].replace(cmd1_extrude_amount, 'E' + cmd1_new_extrude_amount)
+        lines[i_2] = lines[i_2].replace(cmd2_extrude_amount, 'E' + str(REAMAINDER))
+        
+        print()
+        
+        
     
     
     new_lines.append(line)
