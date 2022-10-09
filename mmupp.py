@@ -15,6 +15,12 @@ CONFIG_KEY_DIP_POST_PAUSE    = ';mmupp:dip_post_pause'
 
 CONFIG_KEY_RAMMING_TEMP      = ';mmupp:ramming_temp'
 
+CONFIG_KEY_SLOWDOWN_PURGE    = ';mmupp:slowdown_purge'
+
+CONFIG_KEY_SLOWDOWN_LOAD    = ';mmupp:slowdown_load'
+
+CONFIG_IGNORE_INITIAL_TOOL   = ';mmupp:ignore_initial_tool'
+
 
 """
 Config reset keys
@@ -36,6 +42,11 @@ DIP_RETRACT_SPEED = 4000
 DIP_POST_PAUSE = 8000
 
 RAMMING_TEMP = -1
+
+SLOWDOWN_PURGE = False
+SLOWDOWN_LOAD = False
+IGNORE_INITIAL_TOOL = False
+
 
 
 DIP_DISTANCE_PREV = -1
@@ -98,6 +109,15 @@ for i in range(len(lines)):
         RAMMING_TEMP_PREV = RAMMING_TEMP
         RAMMING_TEMP = float(line.split('=')[1])
         
+    elif line.startswith(CONFIG_KEY_SLOWDOWN_PURGE):
+        SLOWDOWN_PURGE = True
+        
+    elif line.startswith(CONFIG_KEY_SLOWDOWN_LOAD):
+        SLOWDOWN_LOAD = True
+        
+    elif line.startswith(CONFIG_IGNORE_INITIAL_TOOL):
+        IGNORE_INITIAL_TOOL = True
+        
         
     """
     Check for any config resets
@@ -159,7 +179,7 @@ for i in range(len(lines)):
         new_lines.append(";MMUPP: RAMMING TEMP ADDED")
         new_lines.append("M109 R" + str(RAMMING_TEMP))
         
-    if "; CP TOOLCHANGE LOAD" in line:
+    if "; CP TOOLCHANGE LOAD" in line and SLOWDOWN_PURGE:
         
         print(i)
         i_1 = (i + 1)
@@ -195,6 +215,28 @@ for i in range(len(lines)):
         
         print()
         
+    
+    # Slowdown feedrate of load to wipe moves
+    if "; CP TOOLCHANGE LOAD" in line and SLOWDOWN_LOAD:
+        
+        new_lines.append(";MMUPP: TOOLCHANGE LOAD SLOWDOWN")
+        
+        w = 1;
+        safe_feed_rate = 200
+        
+        while "; CP TOOLCHANGE WIPE" not in lines[i + w]:
+            
+            if 'G1' in lines[i + w] and 'F' in lines[i + w]:
+                tmp_line = lines[i + w].split('F', 1)[0] + 'F' + str(safe_feed_rate)
+                lines[i + w] = tmp_line
+            
+            w = w + 1
+        
+        
+    
+    if IGNORE_INITIAL_TOOL and re.match(r"T[0-9]", line):
+        IGNORE_INITIAL_TOOL = False
+        line = ";" + line + " ;MMUPP ignore first tool change"
         
     
     
